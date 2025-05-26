@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Logs da Automação</title>
+    <style>
+        body { text-align: center; padding: 20px; font-family: Arial, sans-serif; }
+        .container { max-width: 800px; margin: auto; }
+        .log-box { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; text-align: left; background: #f9f9f9; }
+    </style>
+    <script>
+        function atualizarLogs() {
+            fetch('/get_logs')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('log').textContent = data;
+                });
+        }
+        setInterval(atualizarLogs, 2000);  // Atualiza a cada 2 segundos
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Logs da Automação</h1>
+        <div id="log" class="log-box"></div>
+        <br>
+        <a href="{{ url_for('index') }}"><button>Voltar ao Menu</button></a>
+    </div>
+</body>
+</html>
