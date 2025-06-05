@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Captura de Telas Automática</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #121212;
+      color: #ddd;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    button {
+      background-color: #1e90ff;
+      border: none;
+      color: white;
+      padding: 10px 16px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:disabled {
+      background-color: #555;
+      cursor: not-allowed;
+    }
+    button:hover:not(:disabled) {
+      background-color: #005cbf;
+    }
+    #logArea {
+      width: 100%;
+      height: 450px;
+      background-color: #000;
+      color: #0f0;
+      font-family: 'Courier New', Courier, monospace;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      box-shadow: inset 0 0 15px #0f0;
+      border: 1px solid #0f0;
+    }
+    h1 {
+      margin: 0;
+      font-weight: normal;
+      font-size: 1.8rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <button id="btnVoltar" onclick="window.history.back()">Voltar</button>
+    <h1>Captura de Telas Automática</h1>
+    <button id="btnExecutar">Executar</button>
+  </header>
+
+  <pre id="logArea">Clique em "Executar" para iniciar o script.</pre>
+
+  <script>
+    const btnExecutar = document.getElementById('btnExecutar');
+    const logArea = document.getElementById('logArea');
+    let intervaloLogs = null;
+    let ultimoIndice = 0; // controla o índice da última linha adicionada
+
+    btnExecutar.addEventListener('click', () => {
+      logArea.textContent = "Iniciando execução do script...\n";
+      btnExecutar.disabled = true;
+      ultimoIndice = 0;
+
+      fetch('/executar_captura', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          logArea.textContent += "Status: " + data.status + "\n";
+          iniciarAtualizacaoLogs();
+        })
+        .catch(err => {
+          logArea.textContent += "Erro ao iniciar execução: " + err + "\n";
+          btnExecutar.disabled = false;
+        });
+    });
+
+    function iniciarAtualizacaoLogs() {
+      if (intervaloLogs) clearInterval(intervaloLogs);
+      intervaloLogs = setInterval(() => {
+        fetch('/logs')
+          .then(res => res.json())
+          .then(data => {
+            const logsNovos = data.logs.slice(ultimoIndice);
+            if (logsNovos.length > 0) {
+              logsNovos.forEach(linha => {
+                logArea.textContent += linha;
+              });
+              ultimoIndice = data.logs.length;
+              logArea.scrollTop = logArea.scrollHeight;
+            }
+
+            const ultimoLog = data.logs.length > 0 ? data.logs[data.logs.length - 1] : '';
+            if (
+              ultimoLog.includes("Execução finalizada com sucesso.") ||
+              ultimoLog.includes("Script retornou código de erro") ||
+              ultimoLog.includes("Erro ao executar")
+            ) {
+              clearInterval(intervaloLogs);
+              btnExecutar.disabled = false;
+            }
+          });
+      }, 1000);
+    }
+  </script>
+</body>
+</html>

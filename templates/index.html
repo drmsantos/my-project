@@ -1,62 +1,136 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-    <meta charset="UTF-8" />
-    <title>Menu Principal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        /* Reset básico */
-        * {
-            box-sizing: border-box;
-        }
-        body, html {
-            margin: 0; padding: 0; height: 100%;
-            font-family: 'Inter', sans-serif;
-            background: #f0f4f8;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .container {
-            background: white;
-            padding: 40px 60px;
-            border-radius: 15px;
-            box-shadow: 0 12px 24px rgba(0,0,0,0.12);
-            width: 300px;
-            text-align: center;
-        }
-        button {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border: none;
-            color: white;
-            font-weight: 600;
-            padding: 14px 30px;
-            font-size: 1.1rem;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            width: 100%;
-        }
-        button:hover {
-            background: linear-gradient(135deg, #764ba2, #667eea);
-            box-shadow: 0 8px 20px rgba(118, 75, 162, 0.6);
-            transform: translateY(-2px);
-        }
-        button:active {
-            transform: translateY(0);
-            box-shadow: none;
-        }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Menu Principal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;600&display=swap');
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    font-family: 'Montserrat', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Arte abstrata no fundo */
+  body::before {
+    content: "";
+    position: absolute;
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle at center, #a8c0ff, transparent 70%);
+    border-radius: 50%;
+    top: -200px;
+    left: -200px;
+    filter: blur(100px);
+    opacity: 0.6;
+    z-index: 0;
+  }
+  body::after {
+    content: "";
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle at center, #fbc7a4, transparent 70%);
+    border-radius: 50%;
+    bottom: -180px;
+    right: -180px;
+    filter: blur(80px);
+    opacity: 0.5;
+    z-index: 0;
+  }
+
+  main {
+    width: 90%;
+    max-width: 600px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 40px 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  h1 {
+    grid-column: 1 / -1;
+    font-weight: 600;
+    font-size: 2.4rem;
+    color: #222;
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  a.button {
+    all: unset;
+    cursor: pointer;
+    display: inline-block;
+    background: white;
+    padding: 20px 28px;
+    border-radius: 16px;
+    box-shadow:
+      0 1px 3px rgba(0,0,0,0.12),
+      0 8px 12px -4px rgba(0,0,0,0.06);
+    font-weight: 600;
+    font-size: 1.25rem;
+    color: #222;
+    text-align: center;
+    transition:
+      box-shadow 0.4s ease,
+      transform 0.3s ease,
+      background-color 0.3s ease,
+      color 0.3s ease;
+    text-decoration: none;
+  }
+
+  a.button:hover {
+    box-shadow:
+      0 10px 25px rgba(0,0,0,0.12),
+      0 20px 35px rgba(0,0,0,0.07);
+    transform: translateY(-6px);
+    background-color: #f0f4ff;
+    color: #4a66f8;
+  }
+
+  a.button:active {
+    transform: translateY(-2px);
+    box-shadow:
+      0 6px 15px rgba(0,0,0,0.1),
+      0 10px 15px rgba(0,0,0,0.05);
+  }
+
+  /* Botão Sair vermelho */
+  a.button.exit {
+    border-left: 5px solid #ff4c4c;
+    color: #b22222;
+  }
+
+  a.button.exit:hover {
+    background-color: #ffeaea;
+    color: #ff4c4c;
+  }
+
+  @media (max-width: 480px) {
+    a.button {
+      padding: 16px 20px;
+      font-size: 1.1rem;
+    }
+  }
+</style>
 </head>
 <body>
-    <div class="container">
-        <button id="btnSobre">Sobre</button>
-    </div>
-
-    <script>
-        document.getElementById('btnSobre').addEventListener('click', () => {
-            window.location.href = "{{ url_for('sobre') }}";
-        });
-    </script>
+  <main role="main" aria-label="Menu principal">
+    <h1>Menu Principal</h1>
+    <a href="/elastic" class="button">Coleta ElasticSearch</a>
+    <a href="/opensearch" class="button">Coleta OpenSearch</a>
+    <a href="/posdrop" class="button">Coleta Pos Drop</a>
+    <a href="/sair" class="button exit">Sair</a>
+  </main>
 </body>
 </html>

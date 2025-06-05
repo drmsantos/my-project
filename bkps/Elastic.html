@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Captura de Telas Automática</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      background: linear-gradient(135deg, #4a90e2 0%, #50e3c2 100%);
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      color: #fff;
+    }
+
+    #container {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+      padding: 30px 40px;
+      width: 95vw;
+      max-width: 1200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: height 0.3s ease;
+      color: #1a1a1a;
+      height: 800px;
+      max-height: 800px;
+    }
+
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      text-align: center;
+      flex: 1 1 200px;
+      user-select: none;
+      color: #333;
+      font-weight: 700;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    button {
+      background-color: #1e40af;
+      border: none;
+      color: white;
+      padding: 12px 28px;
+      font-size: 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, box-shadow 0.2s ease;
+      margin: 0 5px;
+      user-select: none;
+      flex-shrink: 0;
+      box-shadow: 0 3px 8px rgba(30,64,175,0.5);
+    }
+
+    button:disabled {
+      background-color: #a5b4fc;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    button:hover:not(:disabled) {
+      background-color: #153e75;
+      box-shadow: 0 5px 15px rgba(21,62,117,0.6);
+    }
+
+    #btnVoltar {
+      background-color: #6b7280;
+      box-shadow: 0 3px 8px rgba(107,114,128,0.5);
+    }
+
+    #btnVoltar:hover {
+      background-color: #4b5563;
+      box-shadow: 0 5px 15px rgba(75,85,99,0.6);
+    }
+
+    #btnVoltarMenu {
+      background-color: #10b981;
+      box-shadow: 0 3px 8px rgba(16,185,129,0.5);
+      margin-top: 20px;
+    }
+
+    #btnVoltarMenu:hover {
+      background-color: #059669;
+      box-shadow: 0 5px 15px rgba(5,150,105,0.6);
+    }
+
+    #logArea {
+      width: 100%;
+      height: 600px;
+      background-color: #f3f4f6;
+      color: #111;
+      font-family: 'Courier New', Courier, monospace;
+      padding: 15px 18px;
+      border-radius: 12px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      border: 1.5px solid #ccc;
+      box-shadow: inset 0 3px 6px rgba(0,0,0,0.1);
+      transition: height 0.3s ease;
+      user-select: text;
+    }
+
+    @media (max-width: 800px) {
+      #container {
+        width: 100%;
+        height: auto !important;
+        max-height: none !important;
+      }
+      header, #logArea {
+        width: 100%;
+      }
+      h1 {
+        font-size: 1.4rem;
+      }
+      button {
+        padding: 10px 18px;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <header>
+      <button id="btnVoltar" onclick="window.history.back()">Voltar</button>
+      <h1>Captura de Telas</h1>
+      <div style="display: flex; gap: 8px;">
+        <button id="btnLimpar">Limpar</button>
+        <button id="btnExecutar">Executar</button>
+      </div>
+    </header>
+
+    <pre id="logArea">Clique em "Executar" para iniciar o script.</pre>
+
+    <button id="btnVoltarMenu" onclick="window.location.href='/'">Voltar ao Menu</button>
+  </div>
+
+  <script>
+    const btnExecutar = document.getElementById('btnExecutar');
+    const btnLimpar = document.getElementById('btnLimpar');
+    const logArea = document.getElementById('logArea');
+
+    let intervaloLogs = null;
+    let ultimoIndice = 0;
+    let executando = false;
+
+    btnExecutar.addEventListener('click', () => {
+      if (executando) return;
+
+      executando = true;
+      btnExecutar.disabled = true;
+      logArea.textContent = "Iniciando execução do script...\n";
+      ultimoIndice = 0;
+
+      fetch('/executar_captura', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          logArea.textContent += "Status: " + data.status + "\n";
+          iniciarAtualizacaoLogs();
+        })
+        .catch(err => {
+          logArea.textContent += "Erro ao iniciar execução: " + err + "\n";
+          finalizarExecucao();
+        });
+    });
+
+    btnLimpar.addEventListener('click', () => {
+      logArea.textContent = '';
+    });
+
+    function iniciarAtualizacaoLogs() {
+      if (intervaloLogs) clearInterval(intervaloLogs);
+
+      intervaloLogs = setInterval(async () => {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+          const res = await fetch('/logs', { signal: controller.signal });
+          clearTimeout(timeoutId);
+          const data = await res.json();
+
+          const logsNovos = data.logs.slice(ultimoIndice);
+          if (logsNovos.length > 0) {
+            logsNovos.forEach(linha => {
+              logArea.textContent += linha;
+            });
+            ultimoIndice = data.logs.length;
+            logArea.scrollTop = logArea.scrollHeight;
+          }
+
+          const ultimoLog = data.logs.at(-1) || '';
+          if (
+            ultimoLog.includes("Execução finalizada com sucesso.") ||
+            ultimoLog.includes("Script retornou código de erro") ||
+            ultimoLog.includes("Erro ao executar")
+          ) {
+            finalizarExecucao();
+          }
+        } catch (err) {
+          logArea.textContent += "\nErro ao buscar logs: " + err.message + "\n";
+          finalizarExecucao();
+        }
+      }, 1000);
+    }
+
+    function finalizarExecucao() {
+      clearInterval(intervaloLogs);
+      intervaloLogs = null;
+      executando = false;
+      btnExecutar.disabled = false;
+    }
+  </script>
+</body>
+</html>

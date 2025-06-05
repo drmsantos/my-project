@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <title>ElasticSearch Dashboard</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 100%);
+            margin: 0;
+            padding-top: 60px; /* espaço para top bar fixa */
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* Fundo decorativo simples */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at top left, #a5b4fc, transparent 70%),
+                        radial-gradient(circle at bottom right, #c7d2fe, transparent 70%);
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        .top-bar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 60px;
+            background-color: #4f46e5;
+            color: white;
+            font-weight: 700;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 1000;
+            user-select: none;
+        }
+        .top-bar button {
+            background: #4338ca;
+            border: none;
+            color: white;
+            padding: 8px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: background-color 0.3s ease;
+        }
+        .top-bar button:hover {
+            background: #3730a3;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 960px;
+            margin: 40px 20px 60px;
+            background: #ffffffcc;
+            padding: 30px 35px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.2);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+
+            /* Altura fixa e scroll interno */
+            height: calc(90vh - 60px - 100px);
+            overflow-y: auto;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #3730a3;
+            margin-bottom: 28px;
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #4b5563;
+            font-size: 16px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 16px;
+            border-radius: 12px;
+            border: 1.5px solid #a5b4fc;
+            background: #f9fafb;
+            color: #1f2937;
+            outline-offset: 2px;
+            transition: border-color 0.3s ease;
+            cursor: pointer;
+        }
+        select:hover, select:focus {
+            border-color: #4f46e5;
+            background: #ffffff;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 14px;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+        .buttons button {
+            flex: 1;
+            padding: 14px 0;
+            font-size: 17px;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 6px 12px rgba(79, 70, 229, 0.2);
+            transition: background-color 0.25s ease, box-shadow 0.25s ease;
+            user-select: none;
+        }
+        #executarBtnElastic {
+            background-color: #6366f1;
+            color: white;
+        }
+        #executarBtnElastic:hover:not(:disabled) {
+            background-color: #4f46e5;
+            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.4);
+        }
+        #executarBtnElastic:disabled {
+            background-color: #a5b4fc;
+            cursor: default;
+            box-shadow: none;
+        }
+        #limparBtnElastic {
+            background-color: #ef4444;
+            color: white;
+        }
+        #limparBtnElastic:hover {
+            background-color: #dc2626;
+            box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4);
+        }
+
+        #statusElastic {
+            font-weight: 600;
+            font-size: 16px;
+            color: #4b5563;
+            margin-bottom: 12px;
+            min-height: 24px;
+            text-align: center;
+        }
+
+        #logsElastic {
+            background-color: #f9fafb;
+            border: 1.5px solid #c7d2fe;
+            border-radius: 14px;
+            height: 400px;
+            padding: 18px 20px;
+            overflow-y: auto;
+            font-family: 'Source Code Pro', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            color: #374151;
+            white-space: pre-wrap;
+            user-select: text;
+            box-shadow: inset 0 0 12px #e0e7ffcc;
+        }
+
+        /* Responsividade */
+        @media (max-width: 640px) {
+            .container {
+                margin: 30px 10px 40px;
+                padding: 20px 25px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+            .buttons button {
+                font-size: 15px;
+                padding: 12px 0;
+            }
+            #logsElastic {
+                height: 280px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<body>
+  <div class="top-bar" role="banner">
+    <div>ElasticSearch Dashboard</div>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <form action="/" method="get" style="margin:0;">
+        <button type="submit" title="Voltar ao Menu Principal">← Menu Principal</button>
+      </form>
+    <button id="btn-gerar-pptx" title="Gerar arquivo PPTX"
+        onclick="abrirPopupPPTX()">
+    Gerar PPTX
+</button>
+    </div>
+  </div>
+
+<div class="container">
+    <h1>Execução ElasticSearch</h1>
+
+    <label for="scriptSelectElastic">Selecione o Script:</label>
+    <select id="scriptSelectElastic" aria-label="Selecionar script para execução">
+        <option value="barelastic">Bar Elastic</option>
+        <option value="funelastic">Fun Elastic</option>
+        <option value="palelastic">Pal Elastic</option>
+        <option value="jagelastic">Jag Elastic</option>
+    </select>
+
+    <div class="buttons">
+        <button id="executarBtnElastic" aria-live="polite">▶ Iniciar</button>
+        <button id="limparBtnElastic">🧹 Limpar Log</button>
+    </div>
+
+    <p id="statusElastic" aria-live="polite"></p>
+    <div id="logsElastic" role="log" aria-live="polite" aria-atomic="false"></div>
+</div>
+
+<script>
+    let ultimaQuantidadeLinhasElastic = 0;
+    let emExecucaoElastic = false;
+
+    const btnExecutarElastic = document.getElementById('executarBtnElastic');
+    const btnLimparElastic = document.getElementById('limparBtnElastic');
+    const statusElastic = document.getElementById('statusElastic');
+    const logsElastic = document.getElementById('logsElastic');
+    const selectScriptElastic = document.getElementById('scriptSelectElastic');
+
+    function abrirPopupPPTX() {
+    const width = 800;
+    const height = 600;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+
+    const specs = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no`;
+
+    const popup = window.open('/pptx', 'popupPPTX', specs);
+
+    if (!popup) {
+        mostrarToast('Não foi possível abrir a janela. Verifique se o bloqueador de pop-ups está ativo.');
+        return;
+    }
+
+    popup.focus();
+
+    const intervalo = setInterval(() => {
+        if (popup.closed) {
+            clearInterval(intervalo);
+            mostrarToast('A janela popup foi fechada!');
+            // Coloque aqui o que mais quiser fazer quando fechar a popup
+        }
+    }, 500);
+}
+
+// Função para mostrar um toast simples na tela
+function mostrarToast(mensagem) {
+    const toast = document.createElement('div');
+    toast.textContent = mensagem;
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.left = '50%';
+    toast.style.transform = 'translateX(-50%)';
+    toast.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    toast.style.color = 'white';
+    toast.style.padding = '12px 24px';
+    toast.style.borderRadius = '8px';
+    toast.style.fontSize = '14px';
+    toast.style.zIndex = '10000';
+    toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.4s ease';
+
+    document.body.appendChild(toast);
+
+    // Aparecer o toast
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+    });
+
+    // Desaparecer depois de 3 segundos
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.addEventListener('transitionend', () => {
+            toast.remove();
+        });
+    }, 3000);
+}
+    
+    btnExecutarElastic.addEventListener('click', () => {
+        if (emExecucaoElastic) return;
+
+        const scriptSelecionado = selectScriptElastic.value;
+        limparLogs();
+        emExecucaoElastic = true;
+        btnExecutarElastic.disabled = true;
+        statusElastic.textContent = '⏳ Executando...';
+
+        fetch('/executar_elastic', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ script: scriptSelecionado })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Resposta inválida do servidor');
+            return response.json();
+        })
+        .then(data => {
+            statusElastic.textContent = data.status || 'Execução iniciada.';
+        })
+        .catch(err => {
+            adicionarLog('❌ Erro ao iniciar: ' + err.message);
+            statusElastic.textContent = '❌ Erro na execução.';
+            emExecucaoElastic = false;
+            btnExecutarElastic.disabled = false;
+        });
+    });
+
+    btnLimparElastic.addEventListener('click', () => {
+        limparLogs();
+    });
+
+    function limparLogs() {
+        logsElastic.textContent = '';
+        ultimaQuantidadeLinhasElastic = 0;
+    }
+
+    function adicionarLog(texto) {
+        logsElastic.textContent += texto + '\n';
+        logsElastic.scrollTop = logsElastic.scrollHeight;
+    }
+
+    async function atualizarLogs() {
+        if (!emExecucaoElastic) return;
+
+        try {
+            const response = await fetch('/logs');
+            if (!response.ok) throw new Error('Falha ao buscar logs');
+            const data = await response.json();
+            const logs = data.logs || [];
+            const novaQuantidadeLinhas = logs.length;
+
+            if (novaQuantidadeLinhas > ultimaQuantidadeLinhasElastic) {
+                const novosLogs = logs.slice(ultimaQuantidadeLinhasElastic).join('');
+                adicionarLog(novosLogs);
+                ultimaQuantidadeLinhasElastic = novaQuantidadeLinhas;
+            }
+
+            const ultimoLog = logs.length > 0 ? logs[logs.length - 1] : '';
+            if (
+                ultimoLog.includes("Execução finalizada com sucesso.") ||
+                ultimoLog.includes("Script retornou código de erro") ||
+                ultimoLog.includes("Erro ao executar")
+            ) {
+                emExecucaoElastic = false;
+                btnExecutarElastic.disabled = false;
+                statusElastic.textContent = '✅ Execução finalizada.';
+            }
+        } catch (err) {
+            adicionarLog('⚠️ Erro ao atualizar logs: ' + err.message);
+        }
+    }
+
+    // Atualiza logs a cada 1 segundo só enquanto está em execução
+    setInterval(atualizarLogs, 1000);
+</script>
+
+</body>
+</html>

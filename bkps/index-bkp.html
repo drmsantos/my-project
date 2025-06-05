@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Coleta OpenStack{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f0f2f5;
+    }
+    .container {
+        max-width: 1000px; /* largura ajustada menor */
+        margin: 40px auto;
+        background: #fff;
+        padding: 30px 30px;
+        border-radius: 14px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    }
+    h1 {
+        font-size: 24px;
+        color: #222;
+        margin-bottom: 20px;
+    }
+    label {
+        font-weight: 500;
+        color: #333;
+        display: block;
+        margin-bottom: 10px;
+    }
+    select {
+        width: 100%;
+        padding: 10px;
+        font-size: 15px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        margin-bottom: 20px;
+    }
+    .buttons {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+    .buttons button {
+        flex: 1;
+        padding: 12px;
+        font-size: 15px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    #executarBtn {
+        background-color: #4CAF50;
+        color: white;
+    }
+    #executarBtn:hover {
+        background-color: #43a047;
+    }
+    #limparBtn {
+        background-color: #f44336;
+        color: white;
+    }
+    #limparBtn:hover {
+        background-color: #d32f2f;
+    }
+    #status {
+        font-weight: bold;
+        margin-top: 8px;
+        color: #555;
+    }
+    #logs {
+        background-color: #f9f9f9;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        height: 400px;       /* altura maior */
+        width: 960px;        /* largura menor */
+        overflow-y: auto;
+        white-space: pre-wrap;
+        font-family: monospace;
+        font-size: 13.5px;
+        color: #333;
+        margin-top: 15px;
+    }
+</style>
+
+<div class="container">
+    <h1>Coleta OpenStack</h1>
+
+    <label for="scriptSelect">Selecione o Script:</label>
+    <select id="scriptSelect">
+        <option value="barra">Barra</option>
+        <option value="funcionario">Funcionário</option>
+        <option value="palmeiras">Palmeiras</option>
+        <option value="jaguare">Jaguare</option>
+    </select>
+
+    <div class="buttons">
+        <button id="executarBtn">▶ Iniciar Coleta</button>
+        <button id="limparBtn">🧹 Limpar Logs</button>
+    </div>
+
+    <p id="status"></p>
+    <div id="logs"></div>
+</div>
+
+<script>
+    let ultimaQuantidadeLinhas = 0;
+    let executando = false;
+
+    const statusElem = document.getElementById('status');
+    const logsElem = document.getElementById('logs');
+    const executarBtn = document.getElementById('executarBtn');
+    const limparBtn = document.getElementById('limparBtn');
+    const selectScript = document.getElementById('scriptSelect');
+
+    executarBtn.addEventListener('click', () => {
+        if (executando) {
+            alert("Já existe uma execução em andamento. Aguarde finalizar.");
+            return;
+        }
+
+        const scriptSelecionado = selectScript.value;
+        logsElem.innerText = '';
+        ultimaQuantidadeLinhas = 0;
+        statusElem.innerText = 'Iniciando execução...';
+        executando = true;
+        executarBtn.disabled = true;
+
+        fetch('/executar_captura', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ script: scriptSelecionado })
+        })
+        .then(response => response.json())
+        .then(data => {
+            statusElem.innerText = data.status;
+            if (data.status.toLowerCase().includes('não encontrado') || data.status.toLowerCase().includes('erro')) {
+                executando = false;
+                executarBtn.disabled = false;
+            }
+        })
+        .catch(() => {
+            statusElem.innerText = 'Erro na requisição.';
+            executando = false;
+            executarBtn.disabled = false;
+        });
+    });
+
+    limparBtn.addEventListener('click', () => {
+        fetch('/limpar_logs', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                logsElem.innerText = '';
+                statusElem.innerText = data.status;
+                ultimaQuantidadeLinhas = 0;
+            })
+            .catch(() => {
+                statusElem.innerText = 'Erro ao limpar os logs.';
+            });
+    });
+
+    setInterval(() => {
+        if (!executando) return;
+
+        fetch('/logs')
+            .then(response => response.json())
+            .then(data => {
+                const logs = data.logs;
+                const novaQuantidadeLinhas = logs.length;
+                if (novaQuantidadeLinhas > ultimaQuantidadeLinhas) {
+                    const novosLogs = logs.slice(ultimaQuantidadeLinhas).join('');
+                    logsElem.innerText += novosLogs;
+                    logsElem.scrollTop = logsElem.scrollHeight;
+                    ultimaQuantidadeLinhas = novaQuantidadeLinhas;
+
+                    // Finaliza execução se detectar mensagem no log
+                    if (
+                        novosLogs.toLowerCase().includes('finalizada com sucesso') ||
+                        novosLogs.toLowerCase().includes('erro')
+                    ) {
+                        executando = false;
+                        executarBtn.disabled = false;
+                        statusElem.innerText += " (Execução finalizada)";
+                    }
+                }
+            });
+    }, 1000);
+</script>
+{% endblock %}
